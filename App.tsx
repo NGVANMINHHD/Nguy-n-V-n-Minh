@@ -3,9 +3,11 @@ import { VideoPreview } from './components/VideoPreview';
 import { Controls } from './components/Controls';
 import { CommandDisplay } from './components/CommandDisplay';
 import { GeminiAssistant } from './components/GeminiAssistant';
+import { Sidebar } from './components/Sidebar';
 import { WatermarkSettings, VideoMeta } from './types';
 
 function App() {
+  const [activeTab, setActiveTab] = useState<'editor' | 'settings' | 'help'>('editor');
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string>('');
   const [watermarkSrc, setWatermarkSrc] = useState<string | null>(null);
@@ -61,80 +63,144 @@ function App() {
     }));
   };
 
-  // Compute current command context for AI
   const currentCommand = useMemo(() => {
-     // Simplified context generation for AI
      const mode = settings.isBatchMode ? "Batch Mode" : "Single Mode";
      return `[${mode}] Processing ${settings.fileExtension} files. Speed: ${settings.videoSpeed}x. Resolution: ${settings.outputResolution}.`;
   }, [settings]);
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4 md:p-8 font-sans">
-      <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <span className="bg-blue-600 p-2 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.414.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-            </span>
-            FFmpeg Studio
-          </h1>
-          <p className="text-slate-400 mt-1 ml-1 text-sm">
-            Professional Watermark, Speed & Batch Processing Tool
-          </p>
+    // Main Container acts as the "Window"
+    <div className="h-screen w-screen bg-black text-slate-100 flex overflow-hidden font-sans selection:bg-blue-500/30">
+      
+      {/* Sidebar Navigation */}
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Main Content Area */}
+      <div className="flex-grow flex flex-col h-full bg-slate-900">
+        
+        {/* Title Bar / Header */}
+        <header className="h-12 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 select-none drag-region">
+           <div className="flex items-center gap-3">
+             <h1 className="text-sm font-semibold text-slate-300 tracking-wide">FFmpeg Studio Pro</h1>
+             {settings.isBatchMode && (
+                <span className="text-[10px] bg-purple-900/50 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                    Batch Mode Active
+                </span>
+             )}
+           </div>
+           
+           {/* Fake Window Controls */}
+           <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-600/50"></div>
+              <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-600/50"></div>
+              <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-600/50"></div>
+           </div>
+        </header>
+
+        {/* Content Grid */}
+        <div className="flex-grow overflow-hidden relative">
+            {activeTab === 'editor' && (
+                <main className="h-full w-full max-w-[1920px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden">
+                    
+                    {/* Left Panel: Preview & Command (Flexible) */}
+                    <div className="lg:col-span-7 p-6 overflow-y-auto space-y-6 h-full border-r border-slate-800/50">
+                        <div className="bg-black/40 rounded-xl overflow-hidden border border-slate-800 shadow-xl relative">
+                            <div className="absolute top-3 left-4 z-10 pointer-events-none">
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500 bg-black/80 px-2 py-1 rounded backdrop-blur-md">
+                                    {settings.isBatchMode ? 'Sample Preview' : 'Viewport'}
+                                </span>
+                            </div>
+                            <VideoPreview 
+                                videoSrc={videoSrc}
+                                watermarkSrc={watermarkSrc}
+                                settings={settings}
+                                onMetaLoaded={handleMetaLoaded}
+                                onChange={setSettings}
+                            />
+                        </div>
+
+                        <CommandDisplay 
+                            videoName={videoName} 
+                            imageName={imageName} 
+                            settings={settings} 
+                            videoMeta={videoMeta}
+                        />
+                    </div>
+
+                    {/* Right Panel: Controls (Fixed Width) */}
+                    <div className="lg:col-span-5 bg-slate-900 flex flex-col h-full border-l border-slate-800 shadow-2xl">
+                        <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                            <Controls 
+                                settings={settings}
+                                videoMeta={videoMeta}
+                                onChange={setSettings}
+                                onVideoUpload={handleVideoUpload}
+                                onWatermarkUpload={handleWatermarkUpload}
+                            />
+                        </div>
+                        
+                        {/* Assistant anchored at bottom of right panel */}
+                        <div className="h-[300px] border-t border-slate-800 bg-slate-950 p-4">
+                            <GeminiAssistant currentCommand={currentCommand} />
+                        </div>
+                    </div>
+                </main>
+            )}
+
+            {activeTab === 'help' && (
+                <div className="p-12 max-w-3xl mx-auto text-slate-300 space-y-6 overflow-y-auto h-full">
+                    <h2 className="text-2xl font-bold text-white">How to run on your computer</h2>
+                    <div className="space-y-4">
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                            <h3 className="font-semibold text-blue-400 mb-2">1. Install FFmpeg</h3>
+                            <p>You must have FFmpeg installed on your system to run the scripts generated by this tool.</p>
+                            <ul className="list-disc ml-5 mt-2 space-y-1 text-sm text-slate-400">
+                                <li><strong>Windows:</strong> Download from ffmpeg.org or run <code className="bg-black px-1">winget install ffmpeg</code></li>
+                                <li><strong>Mac:</strong> Run <code className="bg-black px-1">brew install ffmpeg</code></li>
+                            </ul>
+                        </div>
+                        
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                            <h3 className="font-semibold text-green-400 mb-2">2. Design & Download</h3>
+                            <p>Upload your files in this tool, adjust the settings (watermark, speed, trim), and check the preview.</p>
+                            <p className="mt-2">Click the <strong>"Download Executable"</strong> button in the Command panel.</p>
+                        </div>
+
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                            <h3 className="font-semibold text-purple-400 mb-2">3. Run the Script</h3>
+                            <p>Move the downloaded <code className="bg-black px-1">.bat</code> or <code className="bg-black px-1">.sh</code> file into the folder where your videos are.</p>
+                            <p className="mt-2">Double-click the file to start processing!</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {activeTab === 'settings' && (
+                 <div className="flex items-center justify-center h-full text-slate-500">
+                     <p>Global Application Settings (Coming Soon)</p>
+                 </div>
+            )}
         </div>
-        <div className="text-right hidden md:block">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-xs text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                System Ready
+        
+        {/* Status Bar */}
+        <footer className="h-6 bg-blue-900/20 border-t border-slate-800 flex items-center justify-between px-3 text-[10px] text-slate-400 select-none">
+            <div className="flex gap-4">
+                <span className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${videoSrc ? 'bg-green-500' : 'bg-slate-600'}`}></div>
+                    Video Source: {videoName || 'None'}
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${watermarkSrc ? 'bg-green-500' : 'bg-slate-600'}`}></div>
+                    Watermark: {imageName || 'None'}
+                </span>
             </div>
-        </div>
-      </header>
+            <div className="flex gap-4">
+                <span>FFmpeg Build: Latest</span>
+                <span>v1.2.0</span>
+            </div>
+        </footer>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
-        {/* Left Column: Preview and Visual Editor */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="bg-slate-950 rounded-xl shadow-2xl overflow-hidden border border-slate-800 relative group">
-             {/* Header for preview */}
-             <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start pointer-events-none">
-                 <span className="text-xs font-mono text-white/50 border border-white/20 px-2 py-1 rounded bg-black/50 backdrop-blur-sm">
-                     {settings.isBatchMode ? 'BATCH PREVIEW (SAMPLE)' : 'PREVIEW MODE'}
-                 </span>
-             </div>
-             
-             <VideoPreview 
-               videoSrc={videoSrc}
-               watermarkSrc={watermarkSrc}
-               settings={settings}
-               onMetaLoaded={handleMetaLoaded}
-               onChange={setSettings}
-             />
-          </div>
-          
-          <CommandDisplay 
-            videoName={videoName} 
-            imageName={imageName} 
-            settings={settings} 
-            videoMeta={videoMeta}
-          />
-        </div>
-
-        {/* Right Column: Controls and Assistant */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col h-full">
-          <Controls 
-            settings={settings}
-            videoMeta={videoMeta}
-            onChange={setSettings}
-            onVideoUpload={handleVideoUpload}
-            onWatermarkUpload={handleWatermarkUpload}
-          />
-          
-          <div className="flex-grow min-h-[300px]">
-            <GeminiAssistant currentCommand={currentCommand} />
-          </div>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
