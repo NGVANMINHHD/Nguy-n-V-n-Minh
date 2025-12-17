@@ -1,0 +1,5 @@
+{
+  "name": "FFmpeg Watermark Wizard",
+  "description": "A visual tool to create FFmpeg watermark commands with transparency control, featuring a Gemini-powered AI assistant for advanced video editing filters.",
+  "requestFramePermissions": []
+}
